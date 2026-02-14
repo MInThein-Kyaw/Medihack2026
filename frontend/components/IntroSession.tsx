@@ -2,7 +2,8 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { User, Language } from '../types';
 import { TRANSLATIONS } from '../constants';
-import { getVoiceFeedback, decode, decodeAudioData } from '../services/geminiService';
+import { getVoiceFeedback } from '../services/apiService';
+import { decode, decodeAudioData } from '../services/audioUtils';
 import Avatar from './Avatar';
 
 interface IntroSessionProps {

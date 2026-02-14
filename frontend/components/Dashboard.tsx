@@ -1,24 +1,25 @@
 
 import React from 'react';
 import { User, CompetencyItem, AssessmentResult, Language } from '../types';
-import { COMPETENCIES, TRANSLATIONS } from '../constants';
+import { TRANSLATIONS } from '../constants';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 
 interface DashboardProps {
   user: User;
+  competencies: CompetencyItem[];
   results: Record<string, AssessmentResult>;
   onSelectCompetency: (competency: CompetencyItem) => void;
   onShowReport: () => void;
   language: Language;
 }
 
-const Dashboard: React.FC<DashboardProps> = ({ user, results, onSelectCompetency, onShowReport, language }) => {
+const Dashboard: React.FC<DashboardProps> = ({ user, competencies, results, onSelectCompetency, onShowReport, language }) => {
   const t = TRANSLATIONS[language];
   const completedCount = Object.keys(results).length;
-  const totalCount = COMPETENCIES.length;
+  const totalCount = competencies.length;
   const allDone = completedCount === totalCount;
   
-  const chartData = COMPETENCIES.map(comp => ({
+  const chartData = competencies.map(comp => ({
     name: comp.name[language].substring(0, 15),
     fullName: comp.name[language],
     score: results[comp.id]?.score || 0,
@@ -57,7 +58,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user, results, onSelectCompetency
              <span className="text-[10px] font-black text-blue-500 bg-blue-500/10 px-2 py-0.5 rounded">MODERN TRACKING</span>
           </div>
           <div className="space-y-3 max-h-[700px] overflow-y-auto pr-3 custom-scrollbar">
-            {COMPETENCIES.map((comp) => {
+            {competencies.map((comp) => {
               const result = results[comp.id];
               const isDone = !!result;
               return (
