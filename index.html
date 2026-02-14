@@ -1,0 +1,75 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nurse AI Avatar Competency Assessment</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;900&display=swap" rel="stylesheet">
+    <style>
+        body { 
+            font-family: 'Inter', sans-serif; 
+            background-color: #05070a;
+            color: #ffffff;
+            overflow-x: hidden;
+        }
+        .glass-panel {
+            background: rgba(22, 27, 34, 0.7);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+        }
+        .glow-blue {
+            box-shadow: 0 0 20px rgba(59, 130, 246, 0.5);
+        }
+        .bg-gradient-dark {
+            background: radial-gradient(circle at 50% 50%, #111827 0%, #05070a 100%);
+        }
+        .wave-accent {
+            background: linear-gradient(135deg, #3b82f6 0%, #2dd4bf 100%);
+            mask-image: url('data:image/svg+xml;utf8,<svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg"><path d="M47.1,-63.1C59.9,-54.2,68.4,-39.2,72.4,-23.4C76.4,-7.6,75.9,9,69.5,23.1C63.2,37.2,50.9,48.8,37,56.9C23.1,65,7.6,69.6,-8,69.6C-23.5,69.7,-39,65.2,-51.1,55.5C-63.1,45.8,-71.8,30.8,-74.6,15.1C-77.4,-0.6,-74.4,-17,-65.4,-30C-56.5,-42.9,-41.6,-52.4,-27.2,-60.6C-12.8,-68.8,1.2,-75.8,15.1,-74.6C29.1,-73.4,42.8,-63.9,47.1,-63.1Z" transform="translate(100 100)" /></svg>');
+            mask-size: cover;
+            opacity: 0.15;
+            position: absolute;
+            z-index: -1;
+        }
+        @keyframes pulse-ring {
+            0% { transform: scale(.33); opacity: 0.8; }
+            80%, 100% { opacity: 0; transform: scale(1.5); }
+        }
+        .pulse-animation {
+            animation: pulse-ring 1.25s cubic-bezier(0.455, 0.03, 0.515, 0.955) infinite;
+        }
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #05070a;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #1f2937;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #3b82f6;
+        }
+    </style>
+<script type="importmap">
+{
+  "imports": {
+    "react": "https://esm.sh/react@^19.2.4",
+    "react-dom/": "https://esm.sh/react-dom@^19.2.4/",
+    "react/": "https://esm.sh/react@^19.2.4/",
+    "@google/genai": "https://esm.sh/@google/genai@^1.41.0",
+    "recharts": "https://esm.sh/recharts@^3.7.0"
+  }
+}
+</script>
+<link rel="stylesheet" href="/index.css">
+</head>
+<body class="bg-gradient-dark text-white selection:bg-blue-500/30">
+    <div id="root"></div>
+<script type="module" src="/index.tsx"></script>
+</body>
+</html>
