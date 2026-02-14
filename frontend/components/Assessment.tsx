@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { User, CompetencyItem, Scenario, AssessmentResult, Language, EvaluationResult } from '../types';
-import { generateScenario, evaluateResponse, getVoiceFeedback, decode, decodeAudioData } from '../services/geminiService';
+import { generateMultipleScenarios, evaluateMultipleResponses, generateShortSummary, getVoiceFeedback, decode, decodeAudioData, startSession } from '../services/apiService';
 import { TRANSLATIONS } from '../constants';
 import Avatar from './Avatar';
 
@@ -13,6 +13,8 @@ interface AssessmentProps {
   isSequential?: boolean;
   totalTopics?: number;
   currentIndex?: number;
+  sessionId?: string;
+  onSessionIdChange?: (sessionId: string) => void;
 }
 
 type InputMode = 'voice' | 'text';
@@ -24,9 +26,17 @@ const Assessment: React.FC<AssessmentProps> = ({
   language,
   isSequential = false,
   totalTopics = 0,
-  currentIndex = 0
+  currentIndex = 0,
+  sessionId: parentSessionId = '',
+  onSessionIdChange
 }) => {
-  const [scenario, setScenario] = useState<Scenario | null>(null);
+  // Multiple scenarios and responses
+  const [scenarios, setScenarios] = useState<Scenario[]>([]);
+  const [responses, setResponses] = useState<string[]>([]);
+  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
+  const [isInReviewStage, setIsInReviewStage] = useState(false);
+  const [localSessionId, setLocalSessionId] = useState<string>('');
+  
   const [response, setResponse] = useState('');
   const [isRecording, setIsRecording] = useState(false);
   const [isEvaluating, setIsEvaluating] = useState(false);
@@ -34,27 +44,57 @@ const Assessment: React.FC<AssessmentProps> = ({
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [inputMode, setInputMode] = useState<InputMode>('voice');
   const [evalResult, setEvalResult] = useState<EvaluationResult | null>(null);
+  const [recordingTimeLeft, setRecordingTimeLeft] = useState(0);
   
   const audioContextRef = useRef<AudioContext | null>(null);
   const recognitionRef = useRef<any>(null);
   const currentAudioSourceRef = useRef<AudioBufferSourceNode | null>(null);
+  const recordingTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const recordingCountdownRef = useRef<NodeJS.Timeout | null>(null);
   const t = TRANSLATIONS[language];
+  const QUESTIONS_PER_COMPETENCY = 1;
+  const MAX_RECORDING_TIME = 15 * 60; // 15 minutes in seconds
 
   useEffect(() => {
+    let isCancelled = false;
+
     const init = async () => {
       setIsLoading(true);
       try {
-        const s = await generateScenario(competency.name[language], language, user.experienceYears);
-        setScenario(s);
+        // Start a session once and reuse it across topics
+        const activeSessionId = parentSessionId || localSessionId;
+        if (!activeSessionId) {
+          const newSessionId = await startSession(language, totalTopics);
+          setLocalSessionId(newSessionId);
+          onSessionIdChange?.(newSessionId);
+        }
+        
+        const loadedScenarios = await generateMultipleScenarios(
+          competency.name[language], 
+          language, 
+          user.experienceYears,
+          QUESTIONS_PER_COMPETENCY
+        );
+
+        if (isCancelled) {
+          return;
+        }
+
+        setScenarios(loadedScenarios);
+        setResponses(Array(loadedScenarios.length).fill(''));
         setIsLoading(false);
         
-        // Custom greeting for sequential mode
-        const greeting = isSequential 
-          ? `${t.questionCount} ${currentIndex + 1} of ${totalTopics}: ${s.text}`
-          : s.text;
-        handleSpeak(greeting);
+        // Speak first question
+        if (loadedScenarios[0]?.text) {
+          handleSpeak(loadedScenarios[0].text);
+        }
       } catch (e) {
+        if (isCancelled) {
+          return;
+        }
         console.error(e);
+        alert('Failed to load questions. Please check if backend is running.');
+        setIsLoading(false);
       }
     };
     init();
@@ -74,17 +114,36 @@ const Assessment: React.FC<AssessmentProps> = ({
         if (finalTranscript) setResponse(prev => prev + (prev ? ' ' : '') + finalTranscript);
       };
 
-      recognitionRef.current.onend = () => setIsRecording(false);
+      recognitionRef.current.onend = () => {
+        setIsRecording(false);
+        // Clear timers on end
+        if (recordingTimerRef.current) {
+          clearTimeout(recordingTimerRef.current);
+          recordingTimerRef.current = null;
+        }
+        if (recordingCountdownRef.current) {
+          clearInterval(recordingCountdownRef.current);
+          recordingCountdownRef.current = null;
+        }
+        setRecordingTimeLeft(0);
+      };
     }
 
     return () => { 
+      isCancelled = true;
       if (recognitionRef.current) recognitionRef.current.stop(); 
       if (currentAudioSourceRef.current) {
         try { currentAudioSourceRef.current.stop(); } catch(e) {}
       }
+      if (recordingTimerRef.current) {
+        clearTimeout(recordingTimerRef.current);
+      }
+      if (recordingCountdownRef.current) {
+        clearInterval(recordingCountdownRef.current);
+      }
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [competency.id]); // Re-run effect when competency ID changes
+  }, [competency.id]);
 
   const handleSpeak = async (text: string) => {
     try {
@@ -115,27 +174,114 @@ const Assessment: React.FC<AssessmentProps> = ({
   };
 
   const toggleRecording = () => {
-    if (isRecording) recognitionRef.current.stop();
-    else { recognitionRef.current.start(); setIsRecording(true); }
+    if (isRecording) {
+      // Stop recording
+      recognitionRef.current.stop();
+      setIsRecording(false);
+      
+      // Clear timers
+      if (recordingTimerRef.current) {
+        clearTimeout(recordingTimerRef.current);
+        recordingTimerRef.current = null;
+      }
+      if (recordingCountdownRef.current) {
+        clearInterval(recordingCountdownRef.current);
+        recordingCountdownRef.current = null;
+      }
+      setRecordingTimeLeft(0);
+    } else {
+      // Start recording
+      recognitionRef.current.start();
+      setIsRecording(true);
+      setRecordingTimeLeft(MAX_RECORDING_TIME);
+      
+      // Set 15-minute auto-stop timer
+      recordingTimerRef.current = setTimeout(() => {
+        if (recognitionRef.current) {
+          recognitionRef.current.stop();
+          setIsRecording(false);
+        }
+        if (recordingCountdownRef.current) {
+          clearInterval(recordingCountdownRef.current);
+          recordingCountdownRef.current = null;
+        }
+        setRecordingTimeLeft(0);
+      }, MAX_RECORDING_TIME * 1000);
+      
+      // Countdown timer (updates every second)
+      recordingCountdownRef.current = setInterval(() => {
+        setRecordingTimeLeft(prev => {
+          if (prev <= 1) {
+            if (recordingCountdownRef.current) {
+              clearInterval(recordingCountdownRef.current);
+              recordingCountdownRef.current = null;
+            }
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+    }
   };
 
   const handleSubmit = async () => {
-    if (!response || !scenario) return;
-    setIsEvaluating(true);
+    if (!response) return;
+    
+    // Stop any current audio
     if (currentAudioSourceRef.current) {
        try { currentAudioSourceRef.current.stop(); } catch(e) {}
     }
     
-    try {
-      const evaluation = await evaluateResponse(scenario, response, language, user.standardScore);
-      setEvalResult(evaluation);
+    // Save current response
+    const newResponses = [...responses];
+    newResponses[currentQuestionIndex] = response;
+    setResponses(newResponses);
+    setResponse('');
+    
+    // Check if more questions remain
+    if (currentQuestionIndex < scenarios.length - 1) {
+      // Move to next question
+      const nextIndex = currentQuestionIndex + 1;
+      setCurrentQuestionIndex(nextIndex);
       
-      const scoreFeedback = `${t.finished} ${evaluation.score.toFixed(1)}.`;
-      handleSpeak(scoreFeedback);
-    } catch (e) {
-      console.error(e);
-    } finally {
-      setIsEvaluating(false);
+      const nextQuestion = scenarios[nextIndex].text;
+      handleSpeak(nextQuestion);
+    } else {
+      // All questions answered, evaluate all at once
+      setIsEvaluating(true);
+      setIsInReviewStage(true);
+      
+      try {
+        const activeSessionId = parentSessionId || localSessionId;
+        if (!activeSessionId) {
+          throw new Error('Session not initialized. Please restart the assessment.');
+        }
+
+        const evaluation = await evaluateMultipleResponses(
+          activeSessionId,
+          competency.id,
+          competency.name[language],
+          scenarios,
+          newResponses,
+          language,
+          user.standardScore
+        );
+        setEvalResult(evaluation);
+        
+        // Generate and speak short summary
+        const shortSummary = await generateShortSummary(
+          evaluation.score,
+          user.standardScore,
+          competency.name[language],
+          language
+        );
+        handleSpeak(shortSummary);
+      } catch (e) {
+        console.error(e);
+        alert(e instanceof Error ? e.message : 'Evaluation failed. Please restart the assessment.');
+      } finally {
+        setIsEvaluating(false);
+      }
     }
   };
 
@@ -145,7 +291,7 @@ const Assessment: React.FC<AssessmentProps> = ({
         competencyId: competency.id,
         score: evalResult.score,
         gap: evalResult.score - user.standardScore,
-        userResponse: response,
+        userResponse: responses.join('\n\n'), // Combine all responses
         feedback: evalResult.feedback,
         idp: evalResult.idp
       });
@@ -156,10 +302,12 @@ const Assessment: React.FC<AssessmentProps> = ({
     return (
       <div className="flex flex-col items-center justify-center min-h-[500px]">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mb-6 shadow-[0_0_20px_rgba(59,130,246,0.3)]"></div>
-        <p className="text-slate-500 font-black uppercase tracking-[0.3em] text-[10px] animate-pulse">Initializing Topic {currentIndex + 1}...</p>
+        <p className="text-slate-500 font-black uppercase tracking-[0.3em] text-[10px] animate-pulse">Loading Questions for Topic {currentIndex + 1}...</p>
       </div>
     );
   }
+
+  const currentScenario = scenarios[currentQuestionIndex];
 
   if (evalResult) {
     const isLastTopic = currentIndex === totalTopics - 1;
@@ -168,7 +316,7 @@ const Assessment: React.FC<AssessmentProps> = ({
         <div className="p-10 bg-gradient-to-br from-blue-900 to-indigo-950 text-white flex justify-between items-center relative overflow-hidden">
           <div className="absolute top-0 right-0 w-48 h-48 bg-blue-500/10 rounded-full -mr-24 -mt-24 blur-3xl"></div>
           <div className="relative z-10">
-            <h2 className="text-3xl font-black uppercase tracking-tight">{language === 'th' ? 'ผลการวิเคราะห์' : 'Session Evaluation'}</h2>
+            <h2 className="text-3xl font-black uppercase tracking-tight">{language === 'th' ? 'ผลการวิเคราะห์' : 'Overall Assessment'}</h2>
             <p className="opacity-60 font-bold uppercase tracking-widest text-[10px] mt-1">{competency.name[language]}</p>
           </div>
           <div className="text-right relative z-10">
@@ -179,7 +327,7 @@ const Assessment: React.FC<AssessmentProps> = ({
         
         <div className="p-10 space-y-8">
           <div className="bg-white/5 p-6 rounded-2xl border border-white/5">
-            <h4 className="text-[10px] font-black text-blue-400 uppercase tracking-[0.2em] mb-3">{language === 'th' ? 'ข้อเสนอแนะจาก AI' : 'Expert Feedback'}</h4>
+            <h4 className="text-[10px] font-black text-blue-400 uppercase tracking-[0.2em] mb-3">{language === 'th' ? 'ข้อเสนอแนะจาก AI' : 'Summary Feedback'}</h4>
             <p className="text-slate-300 text-sm leading-relaxed italic font-medium">"{evalResult.feedback}"</p>
           </div>
 
@@ -226,21 +374,19 @@ const Assessment: React.FC<AssessmentProps> = ({
 
   return (
     <div className="max-w-6xl mx-auto glass-panel rounded-[3rem] shadow-2xl overflow-hidden border border-white/5 animate-fadeIn">
-      {/* Linear Progress Bar */}
-      {isSequential && (
-        <div className="w-full h-1 bg-white/5">
-          <div 
-            className="h-full bg-blue-600 glow-blue transition-all duration-1000" 
-            style={{ width: `${((currentIndex) / totalTopics) * 100}%` }}
-          ></div>
-        </div>
-      )}
+      {/* Progress Bar - Questions within this competency */}
+      <div className="w-full h-1 bg-white/5">
+        <div 
+          className="h-full bg-blue-600 glow-blue transition-all duration-1000" 
+          style={{ width: `${((currentQuestionIndex + 1) / scenarios.length) * 100}%` }}
+        ></div>
+      </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2">
         <div className="bg-[#0a0d14]/50 p-12 flex flex-col items-center justify-center border-b lg:border-b-0 lg:border-r border-white/5 relative">
           <div className="absolute top-8 left-12">
             <span className="text-[10px] font-black text-blue-500 bg-blue-500/10 px-3 py-1 rounded-full border border-blue-500/20 uppercase tracking-[0.2em]">
-               TOPIC {currentIndex + 1} OF {totalTopics}
+               QUESTION
             </span>
           </div>
           
@@ -252,7 +398,7 @@ const Assessment: React.FC<AssessmentProps> = ({
               <h4 className="font-black text-slate-500 uppercase tracking-[0.2em] text-[10px]">CURRENT CLINICAL CASE</h4>
             </div>
             <p className="text-xl text-slate-100 leading-relaxed font-bold italic">
-              {scenario?.text}
+              {currentScenario?.text}
             </p>
           </div>
         </div>
@@ -283,7 +429,7 @@ const Assessment: React.FC<AssessmentProps> = ({
                     disabled={isEvaluating}
                     className={`w-24 h-24 rounded-full flex items-center justify-center transition-all relative ${
                       isRecording 
-                        ? 'bg-red-500 text-white shadow-[0_0_30px_rgba(239,68,68,0.4)] ring-8 ring-red-500/10' 
+                        ? 'bg-red-500 text-white shadow-[0_0_30px_rgba(239,68,68,0.4)] ring-8 ring-red-500/10 animate-pulse' 
                         : 'bg-blue-600 text-white hover:bg-blue-500 shadow-xl shadow-blue-900/40 hover:scale-105 active:scale-95'
                     } disabled:opacity-50`}
                   >
@@ -295,7 +441,23 @@ const Assessment: React.FC<AssessmentProps> = ({
                       </svg>
                     )}
                   </button>
-                  <p className="text-[9px] font-black text-slate-600 uppercase tracking-[0.2em]">{isRecording ? "Recording Transmission" : "Hold to Share Knowledge"}</p>
+                  <div className="text-center space-y-1">
+                    <p className={`text-[9px] font-black uppercase tracking-[0.2em] ${
+                      isRecording 
+                        ? 'text-red-400 animate-pulse' 
+                        : 'text-slate-600'
+                    }`}>
+                      {isRecording 
+                        ? (language === 'th' ? '🔴 กำลังบันทึก - แตะเพื่อหยุด' : '🔴 RECORDING - TAP TO STOP') 
+                        : (language === 'th' ? '🎤 แตะเพื่อเริ่มพูด' : '🎤 TAP TO START SPEAKING')}
+                    </p>
+                    {isRecording && recordingTimeLeft > 0 && (
+                      <p className="text-[8px] font-bold text-slate-500 tracking-wider">
+                        {Math.floor(recordingTimeLeft / 60)}:{String(recordingTimeLeft % 60).padStart(2, '0')} 
+                        {language === 'th' ? ' เหลือ' : ' remaining'}
+                      </p>
+                    )}
+                  </div>
                 </div>
               </div>
             ) : (
@@ -317,9 +479,13 @@ const Assessment: React.FC<AssessmentProps> = ({
             {isEvaluating ? (
               <div className="flex items-center justify-center gap-3">
                 <div className="w-5 h-5 border-2 border-black border-t-transparent rounded-full animate-spin"></div>
-                <span>AUDITING RESPONSE...</span>
+                <span>EVALUATING ALL RESPONSES...</span>
               </div>
-            ) : t.submitBtn}
+            ) : currentQuestionIndex < scenarios.length - 1 ? (
+              'NEXT QUESTION'
+            ) : (
+              language === 'th' ? 'ประเมินผลทั้งหมด' : 'EVALUATE ALL ANSWERS'
+            )}
           </button>
         </div>
       </div>

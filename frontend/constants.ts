@@ -2,16 +2,42 @@
 import { CompetencyCategory, CompetencyItem, Language } from './types';
 
 export const COMPETENCIES: CompetencyItem[] = [
-  // Functional (2)
+  // Functional (4)
   { id: 'f1', category: CompetencyCategory.FUNCTIONAL, name: { th: 'จิตสำนึกการให้บริการ (Service Mind)', en: 'Service Mind' } },
   { id: 'f2', category: CompetencyCategory.FUNCTIONAL, name: { th: 'การแก้ไขปัญหาและการตัดสินใจ (Problem Solving)', en: 'Problem Solving & Decision Making' } },
+  { id: 'f3', category: CompetencyCategory.FUNCTIONAL, name: { th: 'การสื่อสารอย่างมีประสิทธิภาพ', en: 'Effective Communication' } },
+  { id: 'f4', category: CompetencyCategory.FUNCTIONAL, name: { th: 'การทำงานเป็นทีมและความร่วมมือ', en: 'Teamwork & Collaboration' } },
   // Specific (2)
   { id: 's1', category: CompetencyCategory.SPECIFIC, name: { th: 'การจัดการความเสี่ยงทางคลินิก', en: 'Clinical Risk Management' } },
   { id: 's2', category: CompetencyCategory.SPECIFIC, name: { th: 'การพยาบาลผู้ป่วยวิกฤต', en: 'Critical Care Nursing' } },
-  // Managerial (2)
+  // Managerial (5)
   { id: 'm1', category: CompetencyCategory.MANAGERIAL, name: { th: 'ความเป็นผู้นำ (Leadership)', en: 'Leadership' } },
   { id: 'm2', category: CompetencyCategory.MANAGERIAL, name: { th: 'ศักยภาพเพื่อนำการเปลี่ยนแปลง (Change Management)', en: 'Change Management' } },
+  { id: 'm3', category: CompetencyCategory.MANAGERIAL, name: { th: 'การบริหารทรัพยากรบุคคล', en: 'People Management' } },
+  { id: 'm4', category: CompetencyCategory.MANAGERIAL, name: { th: 'การคิดเชิงกลยุทธ์', en: 'Strategic Thinking' } },
+  { id: 'm5', category: CompetencyCategory.MANAGERIAL, name: { th: 'การบริหารคุณภาพงานบริการ', en: 'Quality Management' } },
 ];
+
+const pickRandom = <T,>(items: T[], count: number): T[] => {
+  const copied = [...items];
+  for (let index = copied.length - 1; index > 0; index--) {
+    const randomIndex = Math.floor(Math.random() * (index + 1));
+    [copied[index], copied[randomIndex]] = [copied[randomIndex], copied[index]];
+  }
+  return copied.slice(0, count);
+};
+
+export const buildAssessmentCompetencies = (): CompetencyItem[] => {
+  const functional = COMPETENCIES.filter(item => item.category === CompetencyCategory.FUNCTIONAL);
+  const specific = COMPETENCIES.filter(item => item.category === CompetencyCategory.SPECIFIC);
+  const managerial = COMPETENCIES.filter(item => item.category === CompetencyCategory.MANAGERIAL);
+
+  return [
+    ...pickRandom(functional, 2),
+    ...specific.slice(0, 2),
+    ...pickRandom(managerial, 2),
+  ];
+};
 
 export const getLevelData = (years: number) => {
   if (years <= 1) return { level: 1, standardScore: 1 };

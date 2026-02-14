@@ -1,17 +1,18 @@
 
 import React, { useEffect, useState } from 'react';
-import { User, AssessmentResult, Language } from '../types';
-import { generateConsolidatedSummary } from '../services/geminiService';
-import { COMPETENCIES, TRANSLATIONS } from '../constants';
+import { User, AssessmentResult, Language, CompetencyItem } from '../types';
+import { generateConsolidatedSummary } from '../services/apiService';
+import { TRANSLATIONS } from '../constants';
 
 interface ReportProps {
   user: User;
+  competencies: CompetencyItem[];
   results: Record<string, AssessmentResult>;
   onClose: () => void;
   language: Language;
 }
 
-const Report: React.FC<ReportProps> = ({ user, results, onClose, language }) => {
+const Report: React.FC<ReportProps> = ({ user, competencies, results, onClose, language }) => {
   const [summary, setSummary] = useState<string>("");
   const [isLoading, setIsLoading] = useState(true);
   const t = TRANSLATIONS[language];
@@ -20,7 +21,7 @@ const Report: React.FC<ReportProps> = ({ user, results, onClose, language }) => 
     const fetchReport = async () => {
       try {
         const resultList = Object.values(results) as AssessmentResult[];
-        const text = await generateConsolidatedSummary(user, resultList, language);
+        const text = await generateConsolidatedSummary(user.experienceYears, resultList, language);
         setSummary(text);
       } catch (e) {
         console.error(e);
@@ -88,7 +89,7 @@ const Report: React.FC<ReportProps> = ({ user, results, onClose, language }) => 
           {/* Individual Topic Deep-Dive */}
           <div className="space-y-16 print:space-y-8">
             <div className="grid grid-cols-1 gap-12 print:gap-8">
-              {COMPETENCIES.map(comp => {
+              {competencies.map(comp => {
                 const res = results[comp.id];
                 if (!res) return null;
                 const isPositive = res.gap >= 0;

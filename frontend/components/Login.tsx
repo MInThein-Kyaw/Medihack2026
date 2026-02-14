@@ -2,6 +2,7 @@
 import React, { useState } from 'react';
 import { User, Language } from '../types';
 import { getLevelData, TRANSLATIONS } from '../constants';
+import { loginUser, registerUser } from '../services/apiService';
 
 interface LoginProps {
   onLogin: (user: User) => void;
@@ -10,22 +11,47 @@ interface LoginProps {
 }
 
 const Login: React.FC<LoginProps> = ({ onLogin, language, setLanguage }) => {
+  const [isRegisterMode, setIsRegisterMode] = useState(false);
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
+  const [email, setEmail] = useState('');
+  const [department, setDepartment] = useState('');
   const [experience, setExperience] = useState<number>(0);
   const t = TRANSLATIONS[language];
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!username || experience < 0) return;
     
-    const { level, standardScore } = getLevelData(experience);
-    onLogin({
-      username,
-      experienceYears: experience,
-      level,
-      standardScore
-    });
+    if (isRegisterMode && !email) {
+      alert('Email is required for registration');
+      return;
+    }
+    
+    try {
+      const { level, standardScore } = getLevelData(experience);
+      
+      let user;
+      if (isRegisterMode) {
+        user = await registerUser(username, password, email, experience, level, standardScore, department || undefined);
+      } else {
+        user = await loginUser(username, password, experience, level, standardScore);
+      }
+      
+      onLogin({
+        username: user.username,
+        experienceYears: user.experienceYears,
+        level: user.level,
+        standardScore: user.standardScore
+      });
+    } catch (error: any) {
+      console.error(isRegisterMode ? 'Registration failed:' : 'Login failed:', error);
+      if (!isRegisterMode && error?.message === 'Invalid credentials') {
+        alert(language === 'th' ? 'ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง' : 'Invalid username or password.');
+        return;
+      }
+      alert(error.message || (isRegisterMode ? 'Registration failed. Please try again.' : 'Login failed. Please try again.'));
+    }
   };
 
   return (
@@ -62,8 +88,15 @@ const Login: React.FC<LoginProps> = ({ onLogin, language, setLanguage }) => {
 
       <div className="max-w-md w-full glass-panel rounded-[2.5rem] p-10 space-y-10 animate-fadeIn relative z-10 mx-4">
         <div className="text-center space-y-4">
-          <h2 className="text-3xl font-black text-white tracking-tight uppercase">{t.title}</h2>
-          <p className="text-slate-400 text-sm font-medium tracking-wide">Enter your professional information</p>
+          <h2 className="text-3xl font-black text-white tracking-tight uppercase">
+            {isRegisterMode ? (language === 'th' ? 'ลงทะเบียน' : 'REGISTER') : t.title}
+          </h2>
+          <p className="text-slate-400 text-sm font-medium tracking-wide">
+            {isRegisterMode 
+              ? (language === 'th' ? 'สร้างบัญชีใหม่' : 'Create your account') 
+              : 'Enter your professional information'
+            }
+          </p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-6">
@@ -85,6 +118,26 @@ const Login: React.FC<LoginProps> = ({ onLogin, language, setLanguage }) => {
             </div>
           </div>
 
+          {isRegisterMode && (
+            <div className="space-y-1.5">
+              <div className="relative group">
+                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-blue-500 transition-colors">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                  </svg>
+                </span>
+                <input
+                  type="email"
+                  required={isRegisterMode}
+                  className="w-full bg-[#0d1117] pl-12 pr-4 py-4 rounded-2xl border border-white/5 focus:border-blue-500/50 focus:ring-4 focus:ring-blue-500/10 outline-none transition-all text-white placeholder:text-slate-600"
+                  placeholder={language === 'th' ? 'อีเมล' : 'Email'}
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                />
+              </div>
+            </div>
+          )}
+
           <div className="space-y-1.5">
             <div className="relative group">
               <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-blue-500 transition-colors">
@@ -94,6 +147,7 @@ const Login: React.FC<LoginProps> = ({ onLogin, language, setLanguage }) => {
               </span>
               <input
                 type="password"
+                required={isRegisterMode}
                 className="w-full bg-[#0d1117] pl-12 pr-12 py-4 rounded-2xl border border-white/5 focus:border-blue-500/50 focus:ring-4 focus:ring-blue-500/10 outline-none transition-all text-white placeholder:text-slate-600"
                 placeholder={t.password}
                 value={password}
@@ -101,6 +155,25 @@ const Login: React.FC<LoginProps> = ({ onLogin, language, setLanguage }) => {
               />
             </div>
           </div>
+
+          {isRegisterMode && (
+            <div className="space-y-1.5">
+              <div className="relative group">
+                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-blue-500 transition-colors">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                  </svg>
+                </span>
+                <input
+                  type="text"
+                  className="w-full bg-[#0d1117] pl-12 pr-4 py-4 rounded-2xl border border-white/5 focus:border-blue-500/50 focus:ring-4 focus:ring-blue-500/10 outline-none transition-all text-white placeholder:text-slate-600"
+                  placeholder={language === 'th' ? 'แผนก (ไม่บังคับ)' : 'Department (Optional)'}
+                  value={department}
+                  onChange={(e) => setDepartment(e.target.value)}
+                />
+              </div>
+            </div>
+          )}
 
           <div className="space-y-1.5">
             <div className="relative group">
@@ -126,9 +199,43 @@ const Login: React.FC<LoginProps> = ({ onLogin, language, setLanguage }) => {
             type="submit"
             className="w-full bg-blue-600 hover:bg-blue-500 text-white font-black py-4 rounded-2xl shadow-xl shadow-blue-900/40 transition-all transform hover:-translate-y-1 active:scale-[0.98] glow-blue tracking-widest uppercase text-sm"
           >
-            {t.startBtn}
+            {isRegisterMode 
+              ? (language === 'th' ? 'ลงทะเบียน' : 'REGISTER')
+              : t.startBtn
+            }
           </button>
         </form>
+
+        <div className="space-y-4">
+          <div className="relative">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-white/10"></div>
+            </div>
+            <div className="relative flex justify-center text-xs">
+              <span className="px-4 bg-[#161b22] text-slate-500 font-medium">
+                {isRegisterMode 
+                  ? (language === 'th' ? 'มีบัญชีอยู่แล้ว?' : 'Already have an account?')
+                  : (language === 'th' ? 'ยังไม่มีบัญชี?' : "Don't have an account?")
+                }
+              </span>
+            </div>
+          </div>
+          
+          <button
+            type="button"
+            onClick={() => {
+              setIsRegisterMode(!isRegisterMode);
+              setEmail('');
+              setDepartment('');
+            }}
+            className="w-full bg-transparent hover:bg-white/5 text-slate-400 hover:text-white font-bold py-3 rounded-2xl border border-white/10 hover:border-blue-500/50 transition-all"
+          >
+            {isRegisterMode 
+              ? (language === 'th' ? 'เข้าสู่ระบบ' : 'Sign In')
+              : (language === 'th' ? 'สร้างบัญชีใหม่' : 'Create Account')
+            }
+          </button>
+        </div>
 
         <div className="pt-4 text-center">
           <p className="text-[10px] font-black text-slate-600 uppercase tracking-[0.2em]">NURSE COMPETENCY ANALYTICS v2.5</p>

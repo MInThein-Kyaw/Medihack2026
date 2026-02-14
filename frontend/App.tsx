@@ -5,7 +5,7 @@ import Login from './components/Login';
 import Dashboard from './components/Dashboard';
 import Assessment from './components/Assessment';
 import Report from './components/Report';
-import { COMPETENCIES } from './constants';
+import { buildAssessmentCompetencies } from './constants';
 
 enum View {
   LOGIN,
@@ -20,10 +20,14 @@ const App: React.FC = () => {
   const [results, setResults] = useState<Record<string, AssessmentResult>>({});
   const [currentTopicIndex, setCurrentTopicIndex] = useState<number>(0);
   const [language, setLanguage] = useState<Language>('th');
+  const [assessmentSessionId, setAssessmentSessionId] = useState<string>('');
+  const [assessmentCompetencies, setAssessmentCompetencies] = useState<CompetencyItem[]>([]);
 
   const handleLogin = (u: User) => {
     setUser(u);
     setCurrentTopicIndex(0);
+    setAssessmentSessionId('');
+    setAssessmentCompetencies(buildAssessmentCompetencies());
     setResults({}); // Reset results for a fresh session
     setView(View.ASSESSMENT);
   };
@@ -35,7 +39,7 @@ const App: React.FC = () => {
     }));
     
     // Check if there are more topics in the sequence
-    if (currentTopicIndex < COMPETENCIES.length - 1) {
+    if (currentTopicIndex < assessmentCompetencies.length - 1) {
       // We stay in ASSESSMENT view but increment index
       // The component will re-mount with the next competency because key/prop changes
       setCurrentTopicIndex(prev => prev + 1);
@@ -48,11 +52,13 @@ const App: React.FC = () => {
   const handleLogout = () => {
     setUser(null);
     setResults({});
+    setAssessmentSessionId('');
+    setAssessmentCompetencies([]);
     setCurrentTopicIndex(0);
     setView(View.LOGIN);
   };
 
-  const currentCompetency = COMPETENCIES[currentTopicIndex];
+  const currentCompetency = assessmentCompetencies[currentTopicIndex];
 
   return (
     <div className="min-h-screen font-['Inter']">
@@ -117,18 +123,21 @@ const App: React.FC = () => {
                 onComplete={handleAssessmentComplete} 
                 language={language}
                 isSequential={true}
-                totalTopics={COMPETENCIES.length}
+                totalTopics={assessmentCompetencies.length}
                 currentIndex={currentTopicIndex}
+                sessionId={assessmentSessionId}
+                onSessionIdChange={setAssessmentSessionId}
               />
             )}
 
             {view === View.DASHBOARD && (
               <Dashboard 
                 user={user} 
+                competencies={assessmentCompetencies}
                 results={results} 
                 onSelectCompetency={(comp) => {
                   // Allow re-taking from dashboard if needed
-                  const index = COMPETENCIES.findIndex(c => c.id === comp.id);
+                  const index = assessmentCompetencies.findIndex(c => c.id === comp.id);
                   setCurrentTopicIndex(index);
                   setView(View.ASSESSMENT);
                 }}
@@ -140,6 +149,7 @@ const App: React.FC = () => {
             {view === View.REPORT && (
               <Report 
                 user={user} 
+                competencies={assessmentCompetencies}
                 results={results} 
                 onClose={() => setView(View.DASHBOARD)} 
                 language={language}
