@@ -5,13 +5,16 @@ import Login from './components/Login';
 import Dashboard from './components/Dashboard';
 import Assessment from './components/Assessment';
 import Report from './components/Report';
+import AdminDashboard from './components/AdminDashboard';
 import { buildAssessmentCompetencies } from './constants';
+import { removeAuthToken } from './services/apiService';
 
 enum View {
   LOGIN,
   ASSESSMENT,
   DASHBOARD,
-  REPORT
+  REPORT,
+  ADMIN_DASHBOARD
 }
 
 const App: React.FC = () => {
@@ -22,8 +25,10 @@ const App: React.FC = () => {
   const [language, setLanguage] = useState<Language>('th');
   const [assessmentSessionId, setAssessmentSessionId] = useState<string>('');
   const [assessmentCompetencies, setAssessmentCompetencies] = useState<CompetencyItem[]>([]);
+  const [adminUsername, setAdminUsername] = useState<string>('');
 
   const handleLogin = (u: User) => {
+    setAdminUsername('');
     setUser(u);
     setCurrentTopicIndex(0);
     setAssessmentSessionId('');
@@ -50,7 +55,9 @@ const App: React.FC = () => {
   };
 
   const handleLogout = () => {
+    removeAuthToken();
     setUser(null);
+    setAdminUsername('');
     setResults({});
     setAssessmentSessionId('');
     setAssessmentCompetencies([]);
@@ -60,51 +67,58 @@ const App: React.FC = () => {
 
   const currentCompetency = assessmentCompetencies[currentTopicIndex];
 
+  const handleAdminLogin = (username: string) => {
+    setUser(null);
+    setAdminUsername(username);
+    setView(View.ADMIN_DASHBOARD);
+  };
+
   return (
     <div className="min-h-screen font-['Inter']">
       {view === View.LOGIN && (
         <Login 
           onLogin={handleLogin} 
+          onAdminLogin={handleAdminLogin}
           language={language} 
           setLanguage={setLanguage} 
         />
       )}
       
-      {user && view !== View.LOGIN && (
-        <div className="min-h-screen bg-[#05070a] text-white">
-          <header className="bg-[#0a0d14]/80 backdrop-blur-2xl border-b border-white/5 sticky top-0 z-50">
+      {(user || adminUsername) && view !== View.LOGIN && (
+        <div className="min-h-screen bg-slate-50 text-slate-900">
+          <header className="bg-white/90 backdrop-blur-xl border-b border-slate-200 sticky top-0 z-50">
             <div className="max-w-7xl mx-auto px-6 h-20 flex justify-between items-center">
               <div className="flex items-center gap-4 group cursor-pointer" onClick={() => setView(View.DASHBOARD)}>
-                <div className="w-10 h-10 bg-blue-600 rounded-2xl flex items-center justify-center text-white font-black shadow-lg glow-blue transform group-hover:rotate-12 transition-all">N</div>
-                <h1 className="text-2xl font-black text-white tracking-tighter uppercase">
+                <div className="w-10 h-10 bg-blue-500 rounded-2xl flex items-center justify-center text-white font-black shadow-lg transform group-hover:rotate-12 transition-all">N</div>
+                <h1 className="text-2xl font-black text-slate-800 tracking-tighter uppercase">
                   NURSE<span className="text-blue-500">AI.</span>
                 </h1>
               </div>
               
               <div className="flex items-center gap-8">
-                <div className="hidden sm:flex bg-white/5 rounded-2xl p-1 border border-white/5 backdrop-blur-xl">
+                <div className="hidden sm:flex bg-slate-100 rounded-2xl p-1 border border-slate-200">
                   <button 
                     onClick={() => setLanguage('th')} 
-                    className={`px-4 py-1.5 rounded-xl text-[10px] font-black transition-all ${language === 'th' ? 'bg-blue-600 text-white glow-blue' : 'text-slate-500 hover:text-slate-300'}`}
+                    className={`px-4 py-1.5 rounded-xl text-[10px] font-black transition-all ${language === 'th' ? 'bg-blue-500 text-white shadow-md' : 'text-slate-400 hover:text-slate-600'}`}
                   >
                     TH
                   </button>
                   <button 
                     onClick={() => setLanguage('en')} 
-                    className={`px-4 py-1.5 rounded-xl text-[10px] font-black transition-all ${language === 'en' ? 'bg-blue-600 text-white glow-blue' : 'text-slate-500 hover:text-slate-300'}`}
+                    className={`px-4 py-1.5 rounded-xl text-[10px] font-black transition-all ${language === 'en' ? 'bg-blue-500 text-white shadow-md' : 'text-slate-400 hover:text-slate-600'}`}
                   >
                     EN
                   </button>
                 </div>
 
-                <div className="hidden lg:flex flex-col items-end border-r border-white/10 pr-8">
-                  <span className="text-[10px] font-black text-slate-600 uppercase tracking-[0.2em] mb-1">{language === 'th' ? 'ผู้ใช้งาน' : 'User profile'}</span>
-                  <span className="text-sm font-black text-white">{user.username}</span>
+                <div className="hidden lg:flex flex-col items-end border-r border-slate-200 pr-8">
+                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-1">{language === 'th' ? 'ผู้ใช้งาน' : 'User profile'}</span>
+                  <span className="text-sm font-black text-slate-700">{adminUsername || user?.username}</span>
                 </div>
 
                 <button 
                   onClick={handleLogout}
-                  className="w-12 h-12 flex items-center justify-center text-slate-500 hover:text-red-500 hover:bg-red-500/10 rounded-2xl transition-all border border-white/5"
+                  className="w-12 h-12 flex items-center justify-center text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-2xl transition-all border border-slate-200"
                 >
                   <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
@@ -154,6 +168,10 @@ const App: React.FC = () => {
                 onClose={() => setView(View.DASHBOARD)} 
                 language={language}
               />
+            )}
+
+            {view === View.ADMIN_DASHBOARD && (
+              <AdminDashboard language={language} />
             )}
           </main>
         </div>

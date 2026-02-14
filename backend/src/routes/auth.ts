@@ -6,6 +6,33 @@ import { PrismaClient } from '@prisma/client';
 const router = Router();
 const prisma = new PrismaClient();
 
+// Admin login
+router.post('/admin/login', async (req, res) => {
+  try {
+    const { username, password } = req.body;
+
+    const adminUsername = process.env.ADMIN_USERNAME || 'admin';
+    const adminPassword = process.env.ADMIN_PASSWORD || 'admin123';
+
+    if (username !== adminUsername || password !== adminPassword) {
+      return res.status(401).json({ error: 'Invalid admin credentials' });
+    }
+
+    const token = jwt.sign({ role: 'admin' }, process.env.JWT_SECRET!, { expiresIn: '7d' });
+
+    res.json({
+      token,
+      admin: {
+        username: adminUsername,
+        role: 'admin'
+      }
+    });
+  } catch (error) {
+    console.error('Admin login error:', error);
+    res.status(500).json({ error: 'Admin login failed' });
+  }
+});
+
 // Register new user
 router.post('/register', async (req, res) => {
   try {
@@ -34,7 +61,7 @@ router.post('/register', async (req, res) => {
     });
     
     // Generate JWT
-    const token = jwt.sign({ userId: user.id }, process.env.JWT_SECRET!, { expiresIn: '7d' });
+    const token = jwt.sign({ userId: user.id, role: 'user' }, process.env.JWT_SECRET!, { expiresIn: '7d' });
     
     res.json({
       token,
@@ -89,7 +116,7 @@ router.post('/login', async (req, res) => {
     }
     
     // Generate JWT
-    const token = jwt.sign({ userId: user.id }, process.env.JWT_SECRET!, { expiresIn: '7d' });
+    const token = jwt.sign({ userId: user.id, role: 'user' }, process.env.JWT_SECRET!, { expiresIn: '7d' });
     
     res.json({
       token,

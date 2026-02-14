@@ -10,32 +10,32 @@
     <style>
         body { 
             font-family: 'Inter', sans-serif; 
-            background-color: #05070a;
-            color: #ffffff;
+            background-color: #f8fafc;
+            color: #334155;
             overflow-x: hidden;
         }
         .glass-panel {
-            background: rgba(22, 27, 34, 0.7);
-            backdrop-filter: blur(16px);
-            border: 1px solid rgba(255, 255, 255, 0.08);
-            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(148, 163, 184, 0.1);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
         }
         .glow-blue {
-            box-shadow: 0 0 20px rgba(59, 130, 246, 0.5);
+            box-shadow: 0 0 15px rgba(59, 130, 246, 0.15);
         }
         .bg-gradient-dark {
-            background: radial-gradient(circle at 50% 50%, #111827 0%, #05070a 100%);
+            background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
         }
         .wave-accent {
-            background: linear-gradient(135deg, #3b82f6 0%, #2dd4bf 100%);
+            background: linear-gradient(135deg, #64748b 0%, #94a3b8 100%);
             mask-image: url('data:image/svg+xml;utf8,<svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg"><path d="M47.1,-63.1C59.9,-54.2,68.4,-39.2,72.4,-23.4C76.4,-7.6,75.9,9,69.5,23.1C63.2,37.2,50.9,48.8,37,56.9C23.1,65,7.6,69.6,-8,69.6C-23.5,69.7,-39,65.2,-51.1,55.5C-63.1,45.8,-71.8,30.8,-74.6,15.1C-77.4,-0.6,-74.4,-17,-65.4,-30C-56.5,-42.9,-41.6,-52.4,-27.2,-60.6C-12.8,-68.8,1.2,-75.8,15.1,-74.6C29.1,-73.4,42.8,-63.9,47.1,-63.1Z" transform="translate(100 100)" /></svg>');
             mask-size: cover;
-            opacity: 0.15;
+            opacity: 0.05;
             position: absolute;
             z-index: -1;
         }
         @keyframes pulse-ring {
-            0% { transform: scale(.33); opacity: 0.8; }
+            0% { transform: scale(.33); opacity: 0.5; }
             80%, 100% { opacity: 0; transform: scale(1.5); }
         }
         .pulse-animation {
@@ -45,14 +45,14 @@
             width: 8px;
         }
         ::-webkit-scrollbar-track {
-            background: #05070a;
+            background: #f8fafc;
         }
         ::-webkit-scrollbar-thumb {
-            background: #1f2937;
+            background: #cbd5e1;
             border-radius: 4px;
         }
         ::-webkit-scrollbar-thumb:hover {
-            background: #3b82f6;
+            background: #94a3b8;
         }
     </style>
 <script type="importmap">
@@ -68,7 +68,7 @@
 </script>
 <link rel="stylesheet" href="/index.css">
 </head>
-<body class="bg-gradient-dark text-white selection:bg-blue-500/30">
+<body class="bg-gradient-dark text-slate-900 selection:bg-sky-200">
     <div id="root"></div>
 <script type="module" src="/index.tsx"></script>
 </body>

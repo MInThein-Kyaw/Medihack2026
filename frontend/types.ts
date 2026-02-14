@@ -49,3 +49,30 @@ export interface IDP {
   nonTrainingCourses: string[];
   recommendation: string;
 }
+
+export interface AdminNurseStat {
+  id: string;
+  username: string;
+  email: string | null;
+  department: string | null;
+  experienceYears: number;
+  level: number;
+  standardScore: number;
+  createdAt: string;
+  lastLogin: string | null;
+  totalSessions: number;
+  completedSessions: number;
+  completionRate: number;
+  assessmentCount: number;
+  averageScore: number;
+  averageGap: number;
+  lastAssessedAt: string | null;
+}
+
+export interface AdminNurseStatsResponse {
+  summary: {
+    totalNurses: number;
+    activeNurses: number;
+  };
+  nurses: AdminNurseStat[];
+}
