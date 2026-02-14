@@ -1,4 +1,4 @@
-import { Scenario, EvaluationResult, Language } from '../types';
+import { Scenario, EvaluationResult, Language, AdminNurseStatsResponse } from '../types';
 
 const API_URL = 'http://localhost:3001/api';
 
@@ -73,6 +73,32 @@ export async function loginUser(username: string, password: string, experienceYe
   const data = await response.json();
   setAuthToken(data.token);
   return data.user;
+}
+
+/**
+ * Admin login
+ */
+export async function loginAdmin(username: string, password: string) {
+  const response = await fetch(`${API_URL}/auth/admin/login`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ username, password })
+  });
+
+  if (!response.ok) {
+    let errorMessage = 'Admin login failed';
+    try {
+      const error = await response.json();
+      errorMessage = error.error || errorMessage;
+    } catch {
+      // keep default message when response body is not JSON
+    }
+    throw new Error(errorMessage);
+  }
+
+  const data = await response.json();
+  setAuthToken(data.token);
+  return data.admin;
 }
 
 /**
@@ -249,6 +275,29 @@ export async function getAssessmentHistory() {
   
   if (!response.ok) throw new Error('Failed to get history');
   
+  return await response.json();
+}
+
+/**
+ * Get all nurse stats for admin dashboard
+ */
+export async function getAdminNurseStats(): Promise<AdminNurseStatsResponse> {
+  const response = await fetch(`${API_URL}/admin/nurses`, {
+    method: 'GET',
+    headers: authHeaders()
+  });
+
+  if (!response.ok) {
+    let errorMessage = 'Failed to get admin nurse stats';
+    try {
+      const error = await response.json();
+      errorMessage = error.error || errorMessage;
+    } catch {
+      // keep default message
+    }
+    throw new Error(errorMessage);
+  }
+
   return await response.json();
 }
 
