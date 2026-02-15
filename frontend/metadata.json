@@ -1,5 +1,5 @@
 {
-  "name": "Nurse AI Avatar Competency Assessment",
+  "name": "compAsses",
   "description": "A sophisticated AI-driven platform for assessing nurse competencies through voice-enabled avatar interactions, providing real-time feedback, scoring, and personalized development plans.",
   "requestFramePermissions": [
     "microphone"

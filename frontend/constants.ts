@@ -88,7 +88,7 @@ export const TRANSLATIONS: Record<Language, any> = {
     enterDashboard: 'เข้าสู่หน้าหลัก'
   },
   en: {
-    title: 'Nurse Competency Assessment',
+    title: 'compAsses',
     subtitle: 'AI Avatar Voice Chat Assessment System',
     username: 'Username',
     password: 'Password',

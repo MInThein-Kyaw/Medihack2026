@@ -89,9 +89,9 @@ const App: React.FC = () => {
           <header className="bg-white/90 backdrop-blur-xl border-b border-slate-200 sticky top-0 z-50">
             <div className="max-w-7xl mx-auto px-6 h-20 flex justify-between items-center">
               <div className="flex items-center gap-4 group cursor-pointer" onClick={() => setView(View.DASHBOARD)}>
-                <div className="w-10 h-10 bg-blue-500 rounded-2xl flex items-center justify-center text-white font-black shadow-lg transform group-hover:rotate-12 transition-all">N</div>
+                <div className="w-10 h-10 bg-blue-500 rounded-2xl flex items-center justify-center text-white font-black shadow-lg transform group-hover:rotate-12 transition-all">C</div>
                 <h1 className="text-2xl font-black text-slate-800 tracking-tighter uppercase">
-                  NURSE<span className="text-blue-500">AI.</span>
+                  comp<span className="text-blue-500">Asses.</span>
                 </h1>
               </div>
               

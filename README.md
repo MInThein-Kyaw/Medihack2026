@@ -1,4 +1,4 @@
-# Nurse AI Avatar Competency Assessment
+# compAsses
 
 AI-powered competency assessment platform for nurses with voice-enabled avatar interactions, real-time evaluation, and personalized development plans.
 
@@ -17,7 +17,7 @@ AI-powered competency assessment platform for nurses with voice-enabled avatar i
 ## 🏗️ Project Structure
 
 ```
-medihack/
+compasses-monorepo/
 ├── frontend/           # React + TypeScript + Vite
 │   ├── components/     # React components
 │   ├── services/       # API service layer
