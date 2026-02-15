@@ -88,8 +88,8 @@ const App: React.FC = () => {
         <div className="min-h-screen bg-slate-50 text-slate-900">
           <header className="bg-white/90 backdrop-blur-xl border-b border-slate-200 sticky top-0 z-50">
             <div className="max-w-7xl mx-auto px-6 h-20 flex justify-between items-center">
-              <div className="flex items-center gap-4 group cursor-pointer" onClick={() => setView(View.DASHBOARD)}>
-                <div className="w-10 h-10 bg-blue-500 rounded-2xl flex items-center justify-center text-white font-black shadow-lg transform group-hover:rotate-12 transition-all">C</div>
+              <div className="flex items-center gap-3 group cursor-pointer" onClick={() => setView(View.DASHBOARD)}>
+                <img src="/logo.png" alt="CompAsses Logo" className="w-14 h-14 object-contain transform group-hover:rotate-12 transition-all" />
                 <h1 className="text-2xl font-black text-slate-800 tracking-tighter uppercase">
                   comp<span className="text-blue-500">Asses.</span>
                 </h1>

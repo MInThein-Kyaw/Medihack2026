@@ -103,9 +103,12 @@ const Login: React.FC<LoginProps> = ({ onLogin, onAdminLogin, language, setLangu
 
       <div className="max-w-md w-full glass-panel rounded-[2.5rem] p-10 space-y-10 animate-fadeIn relative z-10 mx-4">
         <div className="text-center space-y-4">
-          <h2 className="text-3xl font-black text-slate-800 tracking-tight uppercase">
-            {isRegisterMode ? (language === 'th' ? 'ลงทะเบียน' : 'REGISTER') : t.title}
-          </h2>
+          <div className="flex items-center justify-center gap-3">
+            <img src="/logo.png" alt="CompAsses Logo" className="w-16 h-16 object-contain" />
+            <h2 className="text-3xl font-black text-slate-800 tracking-tight uppercase">
+              {isRegisterMode ? (language === 'th' ? 'ลงทะเบียน' : 'REGISTER') : t.title}
+            </h2>
+          </div>
           <p className="text-slate-500 text-sm font-medium tracking-wide">
             {isRegisterMode 
               ? (language === 'th' ? 'สร้างบัญชีใหม่' : 'Create your account') 
@@ -192,7 +195,7 @@ const Login: React.FC<LoginProps> = ({ onLogin, onAdminLogin, language, setLangu
             </div>
           )}
 
-          {!isAdminMode && (
+          {isRegisterMode && !isAdminMode && (
           <div className="space-y-1.5">
             <div className="relative group">
               <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-blue-500 transition-colors">
