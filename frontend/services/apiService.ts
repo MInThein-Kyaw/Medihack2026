@@ -1,6 +1,6 @@
 import { Scenario, EvaluationResult, Language, AdminNurseStatsResponse } from '../types';
 
-const API_URL = 'http://localhost:3001/api';
+const API_URL = 'http://localhost:3002/api';
 
 // Get auth token from localStorage
 const getAuthToken = () => localStorage.getItem('authToken');

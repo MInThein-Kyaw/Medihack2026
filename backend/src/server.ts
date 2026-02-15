@@ -15,7 +15,7 @@ const prisma = new PrismaClient();
 
 // Middleware
 app.use(cors({
-  origin: ['http://localhost:5173', 'http://localhost:3000'], // Allow both Vite ports
+  origin: ['http://localhost:5173', 'http://localhost:3000', 'http://localhost:3001'], // Allow all Vite ports
   credentials: true
 }));
 app.use(express.json());

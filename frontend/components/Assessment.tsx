@@ -163,10 +163,8 @@ const Assessment: React.FC<AssessmentProps> = ({
       if (currentAudioSourceRef.current) {
         try { currentAudioSourceRef.current.stop(); } catch(e) {}
       }
-      setIsSpeaking(true);
       const base64Audio = await getVoiceFeedback(text, language);
       if (!base64Audio) {
-        setIsSpeaking(false);
         return;
       }
       if (!audioContextRef.current) {
@@ -179,6 +177,7 @@ const Assessment: React.FC<AssessmentProps> = ({
       source.connect(ctx.destination);
       source.onended = () => setIsSpeaking(false);
       currentAudioSourceRef.current = source;
+      setIsSpeaking(true);
       source.start();
     } catch (e) {
       console.error(e);
@@ -406,7 +405,11 @@ const Assessment: React.FC<AssessmentProps> = ({
             </span>
           </div>
           
-          <Avatar isSpeaking={isSpeaking} statusText={isSpeaking ? t.speaking : (isRecording ? "Capturing Analysis..." : t.listening)} />
+          <Avatar 
+            isSpeaking={isSpeaking} 
+            mood={isRecording ? 'thinking' : (isSpeaking ? 'neutral' : 'smiling')}
+            statusText={isSpeaking ? t.speaking : (isRecording ? "Capturing Analysis..." : t.listening)} 
+          />
           
           <div className="mt-12 w-full bg-white p-8 rounded-[2rem] border border-slate-200 shadow-sm">
             <div className="flex items-center gap-2 mb-4">
