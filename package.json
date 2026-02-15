@@ -1,7 +1,7 @@
 {
-  "name": "medihack-monorepo",
+  "name": "compasses-monorepo",
   "version": "1.0.0",
-  "description": "Nurse AI Avatar Competency Assessment - Full Stack Application",
+  "description": "compAsses - Nurse AI Avatar Competency Assessment",
   "private": true,
   "scripts": {
     "install:all": "cd frontend && npm install && cd ../backend && npm install",

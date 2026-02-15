@@ -1,7 +1,7 @@
 {
-  "name": "medihack-backend",
+  "name": "compasses-backend",
   "version": "1.0.0",
-  "description": "Backend API for Nurse Competency Assessment",
+  "description": "Backend API for compAsses",
   "main": "dist/server.js",
   "scripts": {
     "dev": "tsx watch src/server.ts",
